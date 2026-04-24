@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  passwordHash   String
+  role           Role     @default(TECHNICIAN)
+  avatarInitials String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  units         Unit[]           @relation("AssignedTech")
+  completions   StepCompletion[]
+  flagsRaised   Flag[]           @relation("RaisedBy")
+  flagsResolved Flag[]           @relation("ResolvedBy")
+  stepsEdited   AssemblyStep[]   @relation("StepsEdited")
+}
+
+enum Role {
+  ADMIN
+  TECHNICIAN
+}
+
+model AssemblyStep {
+  id          String   @id @default(cuid())
+  stepNumber  Int      @unique
+  title       String
+  description String
+  subSteps    Json
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updatedBy   String?
+  editor      User?    @relation("StepsEdited", fields: [updatedBy], references: [id])
+
+  completions StepCompletion[]
+}
+
+model Unit {
+  id                String     @id @default(cuid())
+  serialNumber      String     @unique
+  assignedTechId    String?
+  assignedTech      User?      @relation("AssignedTech", fields: [assignedTechId], references: [id])
+  currentStepNumber Int        @default(1)
+  status            UnitStatus @default(IN_PROGRESS)
+  shift             String
+  createdAt         DateTime   @default(now())
+  completedAt       DateTime?
+
+  completions StepCompletion[]
+  flags       Flag[]
+}
+
+enum UnitStatus {
+  IN_PROGRESS
+  COMPLETE
+  BLOCKED
+  REWORK
+}
+
+model StepCompletion {
+  id             String           @id @default(cuid())
+  unitId         String
+  stepId         String
+  techId         String
+  status         CompletionStatus @default(PENDING)
+  startedAt      DateTime?
+  completedAt    DateTime?
+  elapsedSeconds Int?
+  notes          String?
+
+  unit Unit         @relation(fields: [unitId], references: [id])
+  step AssemblyStep @relation(fields: [stepId], references: [id])
+  tech User         @relation(fields: [techId], references: [id])
+}
+
+enum CompletionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETE
+  REWORK
+  BLOCKED
+}
+
+model Flag {
+  id           String       @id @default(cuid())
+  unitId       String
+  stepId       String?
+  raisedById   String
+  severity     FlagSeverity
+  message      String
+  resolved     Boolean      @default(false)
+  resolvedById String?
+  createdAt    DateTime     @default(now())
+  resolvedAt   DateTime?
+
+  unit       Unit  @relation(fields: [unitId], references: [id])
+  raisedBy   User  @relation("RaisedBy", fields: [raisedById], references: [id])
+  resolvedBy User? @relation("ResolvedBy", fields: [resolvedById], references: [id])
+}
+
+enum FlagSeverity {
+  ERROR
+  WARNING
+  INFO
+}
+
+model InventoryItem {
+  id        String       @id @default(cuid())
+  name      String
+  code      String?
+  category  ItemCategory
+  quantity  Int
+  minStock  Int          @default(5)
+  updatedAt DateTime     @updatedAt
+}
+
+enum ItemCategory {
+  CONSUMABLE
+  TOOL
+}

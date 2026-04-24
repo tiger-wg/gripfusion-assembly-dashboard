@@ -1,0 +1,21 @@
+{
+  "name": "gripfusion-dashboard",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "dev:web": "npm run dev -w frontend",
+    "dev:api": "npm run dev -w backend",
+    "start:api": "npm run start -w backend",
+    "build": "npm run build -w frontend",
+    "lint": "npm run lint -w frontend",
+    "preview": "npm run preview -w frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
